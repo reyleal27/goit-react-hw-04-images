@@ -1,62 +1,64 @@
 import SearchBar from './SearchBar/SearchBar';
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getAPI } from 'pixabay-api';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Loader from './Loader/Loader';
 import Button from './Button/Button';
 import Notiflix from 'notiflix';
 
-class App extends Component {
-  state = {
-    images: [],
-    currentPage: 1,
-    searchQuery: '',
-    isLoading: false,
-    isError: false,
-    isEnd: false,
-  };
 
-  async componentDidUpdate(_prevProps, prevState) {
-    const { searchQuery, currentPage } = this.state;
+const App = () => {
+  const [images, setImages] = useState([]);
+  const [currentPage, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [isEnd, setIsEnd] = useState(null);
 
-    if (
-      prevState.searchQuery !== searchQuery ||
-      prevState.currentPage !== currentPage
-    ) {
-      await this.fetchImages();
-    }
-  }
+  useEffect(() => {
+    if (searchQuery === '') return;
+    const fetchImages = async () => {
+      setIsLoading(true);
+      setIsError(false);
 
-  fetchImages = async () => {
-    this.setState({ isLoading: true, isError: false });
+      try {
+        const response = await getAPI(searchQuery, currentPage);
+        const { totalHits, hits } = response;
 
-    const { searchQuery, currentPage } = this.state;
+        setImages(prevImages =>
+          currentPage === 1 ? hits : [...prevImages, ...hits]
+        );
+        setIsLoading(false);
 
-    try {
-      const response = await getAPI(searchQuery, currentPage);
-      console.log(response);
-      const { totalHits, hits } = response;
+        console.log(`hits ${hits.length}`);
+        console.log(`totalHits ${totalHits}`);
 
-      this.setState(prevState => ({
-        images: currentPage === 1 ? hits : [...prevState.images, ...hits],
-        isLoading: false,
-        isEnd: prevState.images.length + hits.length >= totalHits,
-      }));
-      if (hits.length === 0) {
-        Notiflix.Notify.warning('No images found. Try a different search.', {
-          position: 'center-top'
-        });
-        return;
+        if (hits.length === 0) {
+          Notiflix.Notify.warning('No images found. Try a different search.', {
+            position: 'center-top',
+          });
+          return;
+        }
+        if (currentPage * 12 >= totalHits) {
+          setIsEnd(true);
+          Notiflix.Notify.warning(
+            'You have reached the end of the search results'
+          );
+        }
+      } catch (error) {
+        setIsLoading(false);
+        setIsError(true);
+        Notiflix.Notify.failure(
+          `An error occured while fetching data: ${error}`
+        );
       }
-    } catch (error) {
-      this.setState({ isLoading: false, isError: true });
-      Notiflix.Notify.failure(`An error occured while fetching data: ${error}`);
-    }
-  };
+    };
+    fetchImages();
+  }, [searchQuery, currentPage]);
 
-  handleSearchSubmit = query => {
+  const handleSearchSubmit = query => {
     const normalizedQuery = query.trim().toLowerCase();
-    const normalizedCurrentQuery = this.state.searchQuery.toLowerCase();
+    const normalizedCurrentQuery = searchQuery.toLowerCase();
 
     if (normalizedQuery === '') {
       Notiflix.Notify.failure(
@@ -66,8 +68,9 @@ class App extends Component {
     }
     if (normalizedQuery === normalizedCurrentQuery) {
       Notiflix.Notify.failure(
-        `Search query is the same as the previous one. Please provide a new search query.`, {
-          position: 'center-top'
+        `Search query is the same as the previous one. Please provide a new search query.`,
+        {
+          position: 'center-top',
         }
       );
 
@@ -75,41 +78,28 @@ class App extends Component {
     }
 
     if (normalizedQuery !== normalizedCurrentQuery) {
-      this.setState({
-        searchQuery: normalizedQuery,
-        currentPage: 1,
-        images: [],
-        isEnd: false,
-      });
-    }
-
-    console.log(`normalizedCurrent: ${normalizedCurrentQuery}`);
-    console.log(normalizedQuery);
-    console.log(this.state.images);
-  };
-
-  handleLoadMore = () => {
-    if (!this.state.isEnd) {
-      this.setState(prevState => ({ currentPage: prevState.currentPage + 1 }));
-    } else {
-      Notiflix.Notify.warning('You have reached the end of the search results');
+      setSearchQuery(normalizedQuery);
+      setPage(1);
+      setImages([]);
+      setIsEnd(false);
     }
   };
 
-  render() {
-    const { images, isLoading, isError, isEnd } = this.state;
-    return (
-      <div className="App">
-        <SearchBar onSubmit={this.handleSearchSubmit} />
-        <ImageGallery images={images} />
-        {isLoading && <Loader />}
-        {!isLoading && !isError && images.length > 0 && !isEnd && (
-          <Button onClick={this.handleLoadMore} />
-        )}
-        {isError && <p>Something went wrong. Please try again later</p>}
-      </div>
-    );
-  }
-}
+  const handleLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
+  };
+
+  return (
+    <div className="App">
+      <SearchBar onSubmit={handleSearchSubmit} />
+      <ImageGallery images={images} />
+      {isLoading && <Loader />}
+      {!isLoading && !isError && images.length > 0 && !isEnd && (
+        <Button onClick={handleLoadMore} />
+      )}
+      {isError && <p>Something went wrong. Please try again later</p>}
+    </div>
+  );
+};
 
 export default App;

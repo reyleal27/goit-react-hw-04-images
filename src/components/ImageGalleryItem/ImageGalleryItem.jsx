@@ -1,39 +1,30 @@
-import React, { Component } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import Modal from 'components/Modal/Modal';
+import { useToggle } from 'components/Modal/toggle';
 
-class ImageGalleryItem extends Component {
-  static propTypes = {
-    image: PropTypes.shape({
-      webformatURL: PropTypes.string.isRequired,
-      largeImageURL: PropTypes.string.isRequired,
-      tags: PropTypes.string,
-    }).isRequired,
-  };
+const ImageGalleryItem = ({ image }) => {
+const { isOpen, toggle } = useToggle();
+ 
+  const { webformatURL, largeImageURL, tags } = image;
 
-  state = {
-    showModal: false,
-  };
+  
+  return (
+    <li className="ImageGalleryItem" onClick={toggle}>
+      <img className="ImageGalleryItem-image" src={webformatURL} alt={tags} />
+     
+      {isOpen && <Modal image={largeImageURL} tags={tags} />}
+    
+    </li>
+  );
+};
 
-  toggleModal = () => {
-    this.setState(prevState => ({
-      showModal: !prevState.showModal,
-    }));
-  };
-
-  render() {
-    const { webformatURL, largeImageURL, tags } = this.props.image;
-    const { showModal } = this.state;
-
-    return (
-      <li className="ImageGalleryItem" onClick={this.toggleModal}>
-        <img className="ImageGalleryItem-image" src={webformatURL} alt={tags} />
-        {showModal && (
-          <Modal image={largeImageURL} tags={tags} onClose={this.toggleModal} />
-        )}
-      </li>
-    );
-  }
-}
+ImageGalleryItem.propTypes = {
+  image: PropTypes.shape({
+    webformatURL: PropTypes.string.isRequired,
+    largeImageURL: PropTypes.string.isRequired,
+    tags: PropTypes.string,
+  }).isRequired,
+};
 
 export default ImageGalleryItem;

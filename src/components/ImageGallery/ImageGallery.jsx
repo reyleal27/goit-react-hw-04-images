@@ -1,26 +1,23 @@
-import ImageGalleryItem from "components/ImageGalleryItem/ImageGalleryItem";
-import React, { Component } from "react";
+import React from 'react';
 import PropTypes from 'prop-types';
+import ImageGalleryItem from 'components/ImageGalleryItem/ImageGalleryItem';
 
+const ImageGallery = ({ images }) => {
+  return (
+    <ul className="ImageGallery">
+      {images.map(image => (
+        <ImageGalleryItem key={image.id} image={image} />
+      ))}
+    </ul>
+  );
+};
 
-class ImageGallery extends Component {
-    static propTypes = {
-        images: PropTypes.arrayOf(
-            PropTypes.shape({
-                id: PropTypes.number.isRequired,
-            })
-        ).isRequired,
-    };
+ImageGallery.propTypes = {
+  images: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+    })
+  ).isRequired,
+};
 
-    render() {
-        const { images } = this.props;
-        return (
-            <ul className="ImageGallery">
-                {images.map(image => (
-                    <ImageGalleryItem key={image.id} image={image} />
-                ))}
-            </ul>
-        );
-    }
-}
 export default ImageGallery;
